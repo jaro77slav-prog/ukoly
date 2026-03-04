@@ -694,6 +694,131 @@
     mask-image: linear-gradient(to left, rgba(0,0,0,1) 0%, rgba(0,0,0,0.85) 55%, transparent 100%);
     -webkit-mask-image: linear-gradient(to left, rgba(0,0,0,1) 0%, rgba(0,0,0,0.85) 55%, transparent 100%);
   }
+
+  /* EDIT MODAL */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.65);
+    backdrop-filter: blur(4px);
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s;
+  }
+  .modal-overlay.open {
+    opacity: 1;
+    pointer-events: all;
+  }
+  .modal {
+    background: var(--paper);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 32px 36px;
+    width: min(520px, 92vw);
+    box-shadow: 0 8px 40px rgba(0,0,0,0.6);
+    position: relative;
+    transform: translateY(16px);
+    transition: transform 0.25s;
+  }
+  .modal-overlay.open .modal { transform: translateY(0); }
+
+  .modal-title {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 20px;
+  }
+
+  .modal-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 18px;
+  }
+  .modal-field label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+  }
+  .modal-field input,
+  .modal-field select,
+  .modal-field textarea {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    padding: 9px 12px;
+    font-size: 14px;
+    font-family: 'Lora', serif;
+    color: var(--ink);
+    outline: none;
+    transition: border-color 0.2s;
+    width: 100%;
+  }
+  .modal-field input:focus,
+  .modal-field select:focus,
+  .modal-field textarea:focus { border-color: var(--accent); }
+  .modal-field select {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--ink-light);
+    cursor: pointer;
+  }
+  .modal-field textarea {
+    resize: vertical;
+    min-height: 64px;
+    font-size: 13px;
+    font-style: italic;
+    color: var(--ink-light);
+  }
+
+  .modal-row {
+    display: flex;
+    gap: 14px;
+  }
+  .modal-row .modal-field { flex: 1; }
+
+  .modal-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    margin-top: 24px;
+    padding-top: 18px;
+    border-top: 1px solid var(--border);
+  }
+  .btn-modal-cancel {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--ink-light);
+    padding: 8px 20px;
+    font-size: 12px;
+    font-family: 'JetBrains Mono', monospace;
+    letter-spacing: 1px;
+    cursor: pointer;
+    border-radius: 2px;
+    transition: all 0.2s;
+  }
+  .btn-modal-cancel:hover { border-color: var(--ink-light); color: var(--ink); }
+  .btn-modal-save {
+    background: var(--accent);
+    color: white;
+    border: none;
+    padding: 8px 24px;
+    font-size: 12px;
+    font-family: 'JetBrains Mono', monospace;
+    letter-spacing: 1px;
+    cursor: pointer;
+    border-radius: 2px;
+    transition: all 0.2s;
+  }
+  .btn-modal-save:hover { background: #ea6a0a; }
 </style>
 </head>
 <body>
@@ -779,6 +904,47 @@
     <div class="empty" id="empty" style="display:none">
       <div class="empty-icon">✎</div>
       <p>Žádné úkoly k zobrazení.<br>Přidejte první úkol výše.</p>
+    </div>
+  </div>
+</div>
+
+<!-- EDIT MODAL -->
+<div class="modal-overlay" id="edit-modal-overlay">
+  <div class="modal">
+    <div class="modal-title">✎ Upravit úkol</div>
+    <div class="modal-field">
+      <label>Název úkolu</label>
+      <input type="text" id="edit-text" maxlength="200" autocomplete="off">
+    </div>
+    <div class="modal-field">
+      <label>Poznámka</label>
+      <textarea id="edit-note" placeholder="Volitelná poznámka…"></textarea>
+    </div>
+    <div class="modal-row">
+      <div class="modal-field">
+        <label>Kategorie</label>
+        <select id="edit-cat">
+          <option value="">Bez kategorie</option>
+          <option value="Práce">Práce</option>
+          <option value="Osobní">Osobní</option>
+          <option value="Nákup">Nákup</option>
+          <option value="Zdraví">Zdraví</option>
+          <option value="Finance">Finance</option>
+          <option value="Rodina">Rodina</option>
+        </select>
+      </div>
+      <div class="modal-field">
+        <label>Priorita</label>
+        <select id="edit-prio">
+          <option value="high">Vysoká</option>
+          <option value="medium">Střední</option>
+          <option value="low">Nízká</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-modal-cancel" id="edit-cancel">Zrušit</button>
+      <button class="btn-modal-save" id="edit-save">Uložit změny</button>
     </div>
   </div>
 </div>
@@ -970,22 +1136,7 @@ function makeTaskEl(t) {
     toast('Úkol smazán');
   });
 
-  el.querySelector('.edit').addEventListener('click', () => {
-    const textEl = el.querySelector('.task-text');
-    const orig = t.text;
-    textEl.innerHTML = `<input class="task-edit-input" value="${escHtml(t.text)}" maxlength="200">`;
-    const inp = textEl.querySelector('input');
-    inp.focus(); inp.select();
-    inp.addEventListener('blur', () => {
-      const v = inp.value.trim();
-      if (v && v !== orig) { t.text = v; saveTask(t); toast('Úkol upraven'); }
-      render();
-    });
-    inp.addEventListener('keydown', e => {
-      if (e.key === 'Enter') inp.blur();
-      if (e.key === 'Escape') { inp.value = orig; inp.blur(); }
-    });
-  });
+  el.querySelector('.edit').addEventListener('click', () => openEditModal(t));
 
   return el;
 }
@@ -993,6 +1144,46 @@ function makeTaskEl(t) {
 function escHtml(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
+
+// ── EDIT MODAL ────────────────────────────────────────────────────
+let editingTask = null;
+
+function openEditModal(t) {
+  editingTask = t;
+  document.getElementById('edit-text').value = t.text;
+  document.getElementById('edit-note').value = t.note || '';
+  document.getElementById('edit-cat').value = t.category || '';
+  document.getElementById('edit-prio').value = t.priority || 'medium';
+  document.getElementById('edit-modal-overlay').classList.add('open');
+  setTimeout(() => document.getElementById('edit-text').focus(), 50);
+}
+
+function closeEditModal() {
+  document.getElementById('edit-modal-overlay').classList.remove('open');
+  editingTask = null;
+}
+
+function saveEditModal() {
+  if (!editingTask) return;
+  const text = document.getElementById('edit-text').value.trim();
+  if (!text) { document.getElementById('edit-text').focus(); return; }
+  editingTask.text     = text;
+  editingTask.note     = document.getElementById('edit-note').value.trim();
+  editingTask.category = document.getElementById('edit-cat').value;
+  editingTask.priority = document.getElementById('edit-prio').value;
+  saveTask(editingTask);
+  toast('✎ Úkol upraven');
+  closeEditModal();
+}
+
+document.getElementById('edit-cancel').addEventListener('click', closeEditModal);
+document.getElementById('edit-save').addEventListener('click', saveEditModal);
+document.getElementById('edit-modal-overlay').addEventListener('click', e => {
+  if (e.target === e.currentTarget) closeEditModal();
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && editingTask) closeEditModal();
+});
 
 // ── ADD TASK ──────────────────────────────────────────────────────
 function addTask() {
